@@ -36,22 +36,6 @@ N_TEST_FRAMES = 300#
 TEST_DURATION = (N_TEST_FRAMES - 1) * WIN_STEP#
 N_TEST_SAMPLES = int(TEST_DURATION * SAMPLE_RATE)#
 
-
-noise_dir =  opt.noise_dir 
-noise_files = opt.noise_files 
-
-
-def get_one_noisefile(noise_file=noise_files):
-    f = open(noise_file, 'r')
-    noise_files = f.readlines()
-    num_noises = len(noise_files)
-    num = random.randint(0, num_noises-1)
-    noise_file = noise_files[num].split()[0]
-    return noise_file
-
-
-np.seterr(divide='ignore', invalid='ignore')
-
 #v = vad.VoiceActivityDetector(speech_energy_threshold = 0.35)
 def load_audio(filename, start=0, stop=None, resample=True):#
     sr = SAMPLE_RATE
@@ -59,17 +43,8 @@ def load_audio(filename, start=0, stop=None, resample=True):#
     y = np.squeeze(y)
     return y, sr
 
-def add_noise(audio_path, noise_path, percent=0.5, sr=16000):
+def add_noise(audio_path, sr=16000):
     src, sr = librosa.load(audio_path, sr=sr)
-    src_noise, sr = librosa.load(noise_path, sr=sr)
-    #print(len(src), len(src_noise))
-    if len(src) > len(src_noise):
-        n = int(len(src)/len(src_noise))
-        src_noise = src_noise.repeat(n+1)
-    flag = random.randint(0, len(src_noise) - len(src))
-    src_noise = src_noise[flag: flag+len(src)]
-    percent = 0.002*random.randint(1,5)
-    src = src + percent * src_noise
     S = librosa.core.stft(src, n_fft=N_FFT, hop_length=HOP_LEN, window=hamming)#
     feature, _ = librosa.magphase(S)
     return feature
@@ -215,7 +190,7 @@ class DatasetFolder(data.Dataset):
         return fmt_str
 
 
-IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.wav','.npy']
+IMG_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif','.npy']
 
 
 def pil_loader(path):
@@ -224,11 +199,6 @@ def pil_loader(path):
         img = Image.open(f)
         return img.convert('RGB')
 
-def npy_loader(path):
-    # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
-        npy = np.load(f)
-        return npy
 
 
 
@@ -249,53 +219,26 @@ def default_loader(path):
         return pil_loader(path)
 
 def npy_loader(path):
-    npys = np.zeros((300, 64))
-    temp = np.load(path)
-    l = temp.shape[0]
-    #print(l)
-    if l <= 300:
-        npys[:l, :] = temp
-        npys[l:, :] = temp[:300-l, :]
-    else:
-        randint = np.random.randint(l - 300)
-        npys = temp[randint: randint+300, :]
-    mu = np.average(npys)
-    sigma = np.std(npys)
-    npys = (npys - mu) / max(sigma, 0.01) 
-    #npys = (npys - np.min(npys))/(np.max(npys)-np.min(npys))
-    return npys
+    feature = np.load(path)
+    npy = np.log1p(feature)#
+    npy = npy.transpose()
+    npy = npy[np.newaxis, :, :]
+    npy = np.repeat(npy, 3, axis=0)
 
-'''
-def wav_loader(path):
-    #print(path)
-    npys = np.zeros((300, 64))
-    Temp = audio_processing.mk_MFB(path)
-    fs, data = wavfile.read(path)
-    data = v.detect_speech(rate = fs, data = data)
-    mfcc_data = np.multiply(Temp[:len(data)],np.expand_dims(data[:,1],1))
-    temp = mfcc_data[np.all(mfcc_data!=0,1)]
-    
-    l = temp.shape[0]
-    if l <= 300:
-        if l < 150:
-            temp = Temp
-        L = temp.shape[0]
-        if L <= 300:
-            npys[:L, :] = temp
-            npys[L:, :] = temp[:300-L, :]
-        else:
-            randint = np.random.randint(L - 300)
-            npys = temp[randint: randint+300, :]
+    l = npy.shape[1]
+    if l <= num_frame:
+        new = np.zeros((3, num_frame, 161))
+        new[:, :l, :] = npy
+        new[:, num_frame-l:, :] = npy[:, :l, :]
+        npy = new
     else:
-        randint = np.random.randint(l - 300)
-        npys = temp[randint: randint+300, :]
-    mu = np.average(npys)
-    sigma = np.std(npys)
-    npys = (npys - mu) / max(sigma, 0.01)
-    #npys = (npys - np.min(npys))/(np.max(npys)-np.min(npys))
-    return npys
-'''
-
+        randint = np.random.randint(l - num_frame)
+        npy = npy[:, randint: randint+num_frame, :]
+    npy = np.swapaxes(npy,1,2)
+    mu = np.average(npy)
+    sigma = np.std(npy)
+    npy = (npy - mu) / max(sigma, 0.001) 
+    return npy
 
 def wav_loader(path):
     #print(path)
@@ -321,9 +264,7 @@ def wav_loader_stfft(path):
 
     #S = librosa.core.stft(y, n_fft=N_FFT, hop_length=HOP_LEN, window=hamming)#
     #feature, _ = librosa.magphase(S)
-    noise_file = get_one_noisefile(noise_files)
-    noise_file = noise_dir + noise_file
-    feature = add_noise(path, noise_file)
+    feature = add_noise(path)
 
 
     npy = np.log1p(feature)#

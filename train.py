@@ -10,7 +10,7 @@ import torch.optim as optim
 from torchvision import datasets
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
-
+from torch.utils.data import DataLoader
 import numpy as np
 import glob
 import random
@@ -42,7 +42,7 @@ except AttributeError:
 opt = Config()
 
 model = resnet.resnet50(num_features=2048, dropout=0.1, num_classes=opt.num_classes).cuda()
-
+model.load_state_dict(torch.load("/content/drive/My Drive/multi-metric/model_latest.pth"))
 model = nn.DataParallel(model)
 
 
@@ -85,9 +85,9 @@ class Dataset(object):
 
 
 data_dir = opt.data_dir
-im_datasets = folder_noise.WavFolder_stfft(data_dir)
+im_datasets = NpyFolder(data_dir)
 print('load')
-train_loader  =  dataloader.DataLoader(im_datasets, batch_size=opt.ims_ids*opt.ims_per_id, sampler=Sampler.PKSampler(im_datasets),shuffle=False,num_workers=5)
+train_loader  = DataLoader(im_datasets, batch_size=opt.ims_ids*opt.ims_per_id, sampler=Sampler.PKSampler(im_datasets),shuffle=False,num_workers=5)
 
 
 def accuracy(output, target, topk=(1,)):
@@ -101,7 +101,7 @@ def accuracy(output, target, topk=(1,)):
 
     res = []
     for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0)
+        correct_k = correct[:k].reshape(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
 
     return res
@@ -175,14 +175,14 @@ def train_model(n_epochs=25):
                 epoch, step, len(train_loader),
                 prec1, loss_tri, npair_loss, angular_loss, loss_softmax))
 
-            if step % 2000 == 0:
+            if step % 40 == 0:
    
-                torch.save(model.state_dict(),"./logs/model-batch-%s.pth.tar"% int(step/2000))
+                torch.save(model.state_dict(),"/content/drive/My Drive/multi-metric/model_latest.pth")
                 print (" | Time consuming: {:.2f}s".format(time.time()-since))
                 print (" | ")
 
 
-        torch.save(model.state_dict(),"./logs/model_avgpool{}.pth.tar".format(epoch))
+        torch.save(model.state_dict(),"/content/drive/My Drive/multi-metric/model_{}.pth".format(epoch))
 
     print (" | Time consuming: {:.2f}s".format(time.time()-since))
     print (" | ")
