@@ -63,13 +63,13 @@ class ResNet(nn.Module):
         #init.normal(self.features, std=0.001)
         #init.constant(self.features, 0)
         # x3 module
-        self.att1 = SELayer(256,reduction=16)
+        self.att1 = SELayer(64,reduction=16)
         #for i in self.att1.parameters():
             #i.requires_grad=False
-        self.att2 = SELayer(512,reduction=16)
+        self.att2 = SELayer(128,reduction=16)
         #for i in self.att2.parameters():
             #i.requires_grad=False
-        self.att3 = SELayer(1024,reduction=16)
+        self.att3 = SELayer(256,reduction=16)
         #for i in self.att3.parameters():
             #i.requires_grad=False
 

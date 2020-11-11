@@ -41,8 +41,7 @@ except AttributeError:
 
 opt = Config()
 
-model = resnet.resnet50(num_features=2048, dropout=0.1, num_classes=opt.num_classes).cuda()
-model.load_state_dict(torch.load("/content/drive/My Drive/multi-metric/model_latest.pth"))
+model = resnet.resnet18(num_features=512, dropout=0.1, num_classes=opt.num_classes).cuda()
 model = nn.DataParallel(model)
 
 
@@ -85,7 +84,7 @@ class Dataset(object):
 
 
 data_dir = opt.data_dir
-im_datasets = NpyFolder(data_dir)
+im_datasets = folder_noise.NpyFolder(data_dir)
 print('load')
 train_loader  = DataLoader(im_datasets, batch_size=opt.ims_ids*opt.ims_per_id, sampler=Sampler.PKSampler(im_datasets),shuffle=False,num_workers=5)
 
@@ -152,7 +151,7 @@ def train_model(n_epochs=25):
             
             loss_tri, prec_tri = criterion_tri(features, labels)
 
-            loss = 0.1*loss_softmax + loss_tri + angular_loss + 0.5*npair_loss
+            loss = 0.05*loss_softmax + loss_tri + angular_loss + 0.5*npair_loss
 
 
             optimizer.zero_grad()
