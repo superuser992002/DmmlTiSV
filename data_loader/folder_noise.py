@@ -219,25 +219,7 @@ def default_loader(path):
         return pil_loader(path)
 
 def npy_loader(path):
-    num_frame = 400
     npy = np.load(path)
-    npy = npy.transpose()
-    npy = npy[np.newaxis, :, :]
-    npy = np.repeat(npy, 3, axis=0)
-
-    l = npy.shape[1]
-    if l <= num_frame:
-        new = np.zeros((3, num_frame, 161))
-        new[:, :l, :] = npy
-        new[:, num_frame-l:, :] = npy[:, :l, :]
-        npy = new
-    else:
-        randint = np.random.randint(l - num_frame)
-        npy = npy[:, randint: randint+num_frame, :]
-    npy = np.swapaxes(npy,1,2)
-    mu = np.average(npy)
-    sigma = np.std(npy)
-    npy = (npy - mu) / max(sigma, 0.001) 
     return npy
 
 def wav_loader(path):

@@ -127,31 +127,6 @@ class ResNet(nn.Module):
         #features = self.l2_norm(x2)
         logits = self.classifier(features)
 
-        
-
-
-
-
-
-        # x3 module
-        #######
-        '''
-        att1 = F.adaptive_avg_pool2d(att1,1)
-        att1 = att1.view(att1.size(0),-1)
-        att2 = F.adaptive_avg_pool2d(att2,1)
-        att2 = att2.view(att2.size(0),-1)
-        att3 = F.adaptive_avg_pool2d(att3,1)
-        att3 = att3.view(att3.size(0),-1)
-        att_feat = torch.cat([att1,att2,att3],1)
-        att_feat = self.embed_x3(att_feat)
-        att_feat = att_feat.unsqueeze(2)
-        att_feat = att_feat.unsqueeze(3)
-        att_feat = self.bn_x3(att_feat)
-        att_feat = self.prelu(att_feat)
-        att_feat = self.drop(att_feat)
-        att_feat = torch.squeeze(att_feat)
-        x3 = self.classifier_x3(att_feat)
-        '''
         return logits, features
 
     def reset_params(self):

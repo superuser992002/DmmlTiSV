@@ -41,8 +41,10 @@ except AttributeError:
     torch._utils._rebuild_tensor_v2 = _rebuild_tensor_v2
 
 opt = Config()
-
-model = resnet.resnet18(num_features=512, dropout=0.1, num_classes=opt.num_classes).cuda()
+import torch
+m = torch.Tensor([1])
+m.cuda()
+model = resnet.resnet18(num_features=1024, dropout=0.1, num_classes=opt.num_classes).cuda()
 model = nn.DataParallel(model)
 
 
@@ -152,7 +154,7 @@ def train_model(n_epochs=25):
             
             loss_tri, prec_tri = criterion_tri(features, labels)
 
-            loss = 0.05*loss_softmax + loss_tri + angular_loss + 0.5*npair_loss
+            loss = 0.1*loss_softmax + loss_tri 
 
 
             optimizer.zero_grad()

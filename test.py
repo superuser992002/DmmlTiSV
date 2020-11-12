@@ -33,45 +33,30 @@ import pandas as pd
 import librosa
 from scipy.signal.windows import hamming
 import soundfile as sf
-def npy_loader(path):
-    num_frame = 400
-    npy = np.load(path)
-    npy = npy.transpose()
-    npy = npy[np.newaxis, :, :]
-    npy = np.repeat(npy, 3, axis=0)
+from numpy import dot
+from numpy.linalg import norm
+from sklearn.metrics.pairwise import cosine_similarity
 
-    l = npy.shape[1]
-    if l <= num_frame:
-        new = np.zeros((3, num_frame, 161))
-        new[:, :l, :] = npy
-        new[:, num_frame-l:, :] = npy[:, :l, :]
-        npy = new
-    else:
-        randint = np.random.randint(l - num_frame)
-        npy = npy[:, randint: randint+num_frame, :]
-    npy = np.swapaxes(npy,1,2)
-    mu = np.average(npy)
-    sigma = np.std(npy)
-    npy = (npy - mu) / max(sigma, 0.001) 
+def npy_loader(path):
+    npy = np.load(path)
     return npy
 
-def cosin_metric(features1, features2):
-    score = np.mean(np.matmul(features1, features2.T))
-    #print("score:", score)
-    return score
+def cosin_metric(a, b):
+    cos_sim = cosine_similarity(a,b)
+    return cos_sim
 
 def TEST_ZALO(model):
   test = pd.read_csv("/content/self_building_test_zalo.csv") 
   labels = test.label.values
   ut_1s = test.left.values
   ut_2s = test.right.values
-  for idx, ut_1, ut_2 in enumerate(zip(ut_1s, ut_2s)):
+  for idx, (ut_1, ut_2) in enumerate(zip(ut_1s, ut_2s)):
     ut_1 = npy_loader(ut_1)
     ut_2 = npy_loader(ut_2)
     _, feature_1 = model(torch.unsqueeze(torch.FloatTensor(ut_1), 0).cuda())
     _, feature_2 = model(torch.unsqueeze(torch.FloatTensor(ut_2), 0).cuda())
-    feature_1 = feature_1.cpu().numpy().reshape(1,512)
-    feature_2 = feature_2.cpu().numpy().reshape(1,512)
+    feature_1 = feature_1.detach().cpu().numpy().reshape(1,1024)
+    feature_2 = feature_2.detach().cpu().numpy().reshape(1,1024)
     score = cosin_metric(feature_1, feature_2)
 
     if True:
@@ -81,4 +66,4 @@ def TEST_ZALO(model):
         label = 0
     test.at[idx, "score"] = float(score)
     test.at[idx, "label_predict"] = label
-    return accuraccy_score(labels, test.label_predict), test.score
+    return accuracy_score(labels, test.label_predict), test.score

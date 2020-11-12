@@ -21,7 +21,7 @@ def read_utt_file(path):
     dir_firsts.sort()
     for idx, folder in enumerate(dir_firsts):
         npys = []
-        for utt in glob.glob(folder + '/*.wav'):
+        for utt in glob.glob(folder + '/*.npy'):
             npys.append(utt)
         npys.sort()
         for i in range(len(npys)):
@@ -60,6 +60,7 @@ def create_iterator(path, batchsize, shuffle=False):
     #ret = Dataset(datas, labels)
     #return ret
     #print(datas, labels)
+    print(labels)
     return labels
 
 class Sampler(object):
@@ -105,7 +106,7 @@ class PKSampler(Sampler):
         self.data_source = data_source
 
     def __iter__(self):
-        return iter(list(create_iterator(path, 96, shuffle=False))) 
+        return iter(list(create_iterator(path, 128, shuffle=False))) 
 
     def __len__(self):
         return len(self.data_source)
