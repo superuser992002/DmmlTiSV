@@ -219,9 +219,8 @@ def default_loader(path):
         return pil_loader(path)
 
 def npy_loader(path):
-    num_frame = 300
-    feature = np.load(path)
-    npy = np.log1p(feature)#
+    num_frame = 400
+    npy = np.load(path)
     npy = npy.transpose()
     npy = npy[np.newaxis, :, :]
     npy = np.repeat(npy, 3, axis=0)

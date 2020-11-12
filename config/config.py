@@ -1,6 +1,6 @@
 class Config(object):
 
-    num_classes = 399
+    num_classes = 390
     easy_margin = False
     use_se = False
 

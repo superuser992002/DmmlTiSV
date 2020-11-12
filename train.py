@@ -22,12 +22,13 @@ from data_loader import transforms, folder_noise, dataloader, Sampler
 
 #from data_loader import 
 from models import resnet
-
+import seaborn as sns
 #from losses.TripletLoss import TripletLoss
 from losses.losses import TripletLoss, NpairLoss, AngularLoss
 from scipy.stats import norm
 from config import Config
 from torch.autograd import Variable
+from test import TEST_ZALO
 
 try:
     torch._utils._rebuild_tensor_v2
@@ -174,11 +175,16 @@ def train_model(n_epochs=25):
                 epoch, step, len(train_loader),
                 prec1, loss_tri, npair_loss, angular_loss, loss_softmax))
 
-            if step % 40 == 0:
-   
+            if step % 100 == 0:
+                model.eval()
+                acc, scores = TEST_ZALO(model)
+                print("Acuraccy on test zalo is: ", acc)
+                sns.distplot(scores)
                 torch.save(model.state_dict(),"/content/drive/My Drive/multi-metric/model_latest.pth")
                 print (" | Time consuming: {:.2f}s".format(time.time()-since))
                 print (" | ")
+                model.train(True)
+
 
 
         torch.save(model.state_dict(),"/content/drive/My Drive/multi-metric/model_{}.pth".format(epoch))
@@ -191,12 +197,12 @@ if __name__ == '__main__':
 
 
     model = model.cuda()
-    criterion_tri = TripletLoss(margin=0.5, num_instances=opt.ims_per_id).cuda()
+    criterion_tri = TripletLoss(margin=0.75, num_instances=opt.ims_per_id).cuda()
     criterion_pair = NpairLoss()  
     criterion_angular = AngularLoss()
     criterion = nn.CrossEntropyLoss()
 
-    optimizer = optim.Adam(model.parameters(),lr=0.00003, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
+    optimizer = optim.Adam(model.parameters(),lr=0.00003, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-2)
 
     model = train_model(n_epochs=1000)
 
