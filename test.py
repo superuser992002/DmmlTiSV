@@ -53,17 +53,17 @@ def TEST_ZALO(model):
   for idx, (ut_1, ut_2) in enumerate(zip(ut_1s, ut_2s)):
     ut_1 = npy_loader(ut_1)
     ut_2 = npy_loader(ut_2)
-    _, feature_1 = model(torch.unsqueeze(torch.FloatTensor(ut_1), 0).cuda())
-    _, feature_2 = model(torch.unsqueeze(torch.FloatTensor(ut_2), 0).cuda())
+    feature_1 = model(torch.unsqueeze(torch.FloatTensor(ut_1), 0).cuda())
+    feature_2 = model(torch.unsqueeze(torch.FloatTensor(ut_2), 0).cuda())
     feature_1 = feature_1.detach().cpu().numpy().reshape(1,1024)
     feature_2 = feature_2.detach().cpu().numpy().reshape(1,1024)
     score = cosin_metric(feature_1, feature_2)
 
-    if True:
-      if score >= 0.5:
+
+    if score >= 0.5:
         label = 1
-      else:
+    else:
         label = 0
     test.at[idx, "score"] = float(score)
     test.at[idx, "label_predict"] = label
-    return accuracy_score(labels, test.label_predict), test.score
+  return accuracy_score(labels, test.label_predict), test.score
